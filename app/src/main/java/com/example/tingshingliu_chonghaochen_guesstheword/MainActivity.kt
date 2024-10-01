@@ -72,14 +72,18 @@ class HangmanViewModel : ViewModel() {
     }
 
     fun useHint(): String {
-        if (isGameOver) return "Hint not available"
-
+        if (isGameOver || (incorrectGuesses >= 5 && hintState >= 1)) {
+            return "Hint not available"
+        }
         return when (hintState) {
             0 -> currentWord.hint
             1 -> disableHalfLetters()
             2 -> revealVowels()
             else -> "No more hints available"
-        }.also { hintState++ }
+        }.also {
+            hintState++
+            isGameOver = checkGameOver()
+        }
     }
 
     private fun disableHalfLetters(): String {
@@ -123,7 +127,7 @@ val words = listOf(
     Word("ORIGAMI", "The Japanese art of paper folding"),
     Word("CAMERA", "A device used to capture images or videos"),
     Word("SUSHI", "A Japanese dish of prepared vinegared rice with various toppings"),
-    Word("BALLOON", "An inflatable rubber bag often used at parties")
+    Word("BALLOON", "An inflatable rubber")
 )
 
 @Composable
@@ -203,7 +207,7 @@ fun HintPanel(viewModel: HangmanViewModel) {
                     hintMessage.value = message
                 }
             },
-            enabled = !viewModel.isGameOver && viewModel.hintState < 3 && viewModel.incorrectGuesses < 5 || viewModel.hintState == 0,
+            enabled = !viewModel.isGameOver && viewModel.hintState < 3,
             modifier = Modifier.padding(16.dp)
                 .size(100.dp)
         ) {
