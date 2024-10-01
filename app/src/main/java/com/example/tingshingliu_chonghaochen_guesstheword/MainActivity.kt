@@ -203,7 +203,7 @@ fun HintPanel(viewModel: HangmanViewModel) {
                     hintMessage.value = message
                 }
             },
-            enabled = !viewModel.isGameOver && viewModel.hintState < 3,
+            enabled = !viewModel.isGameOver && viewModel.hintState < 3 && viewModel.incorrectGuesses < 5 || viewModel.hintState == 0,
             modifier = Modifier.padding(16.dp)
                 .size(100.dp)
         ) {
@@ -219,7 +219,7 @@ fun MainGamePlayScreen(viewModel: HangmanViewModel) {
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
             text = viewModel.word.map { if (it in viewModel.guessedLetters) it else '_' }.joinToString(" "),
-            fontSize = 60.sp,
+            fontSize = 50.sp,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
