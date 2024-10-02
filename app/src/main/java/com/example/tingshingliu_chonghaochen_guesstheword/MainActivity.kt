@@ -27,7 +27,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -46,11 +45,11 @@ class HangmanViewModel : ViewModel() {
     private var currentWord = getRandomWord()
     var word by mutableStateOf(currentWord.text)
     var guessedLetters by mutableStateOf(setOf<Char>())
-    var incorrectGuesses by mutableStateOf(0)
-    var hintState by mutableStateOf(0)
+    var incorrectGuesses by mutableIntStateOf(0)
+    var hintState by mutableIntStateOf(0)
     var isGameOver by mutableStateOf(false)
 
-    fun makeGuess(letter: Char) {
+    private fun makeGuess(letter: Char) {
         if (letter in word) {
             guessedLetters = guessedLetters + letter
         } else {
@@ -59,6 +58,7 @@ class HangmanViewModel : ViewModel() {
         }
         isGameOver = checkGameOver()
     }
+
     fun makeGuessAndGetMessage(letter: Char): String {
         makeGuess(letter)
         return if (letter in word) {
@@ -67,6 +67,7 @@ class HangmanViewModel : ViewModel() {
             "Incorrect. '$letter' is not in the word."
         }
     }
+
     private fun checkGameOver(): Boolean {
         return word.all { it in guessedLetters } || incorrectGuesses >= 6
     }
@@ -141,8 +142,9 @@ fun HangmanGameApp(viewModel: HangmanViewModel = viewModel()) {
                 HintPanel(viewModel)
             }
             Column(modifier = Modifier.weight(1f)) {
-                MainGamePlayScreen(viewModel)
                 NewGameButton(viewModel)
+                MainGamePlayScreen(viewModel)
+
             }
         }
     } else {
@@ -171,6 +173,7 @@ fun LetterSelectionPanel(viewModel: HangmanViewModel, modifier: Modifier = Modif
                     },
                     enabled = !viewModel.isGameOver && letter !in viewModel.guessedLetters,
                     modifier = Modifier.padding(4.dp)
+                        .size(36.dp)
                 ) {
                     Text(letter.toString())
                 }
@@ -192,42 +195,36 @@ fun HintPanel(viewModel: HangmanViewModel) {
     Column {
         Text(
             text = hintMessage.value,
-            fontSize = 60.sp,
+            fontSize = 24.sp,
             modifier = Modifier.padding(16.dp)
         )
-
-        Button(
-            onClick = {
-                val message = viewModel.useHint()
-                if (message == "Hint not available") {
-                    scope.launch {
-                        snackbarHostState.showSnackbar(message)
+        Row {
+            Button(
+                onClick = {
+                    val message = viewModel.useHint()
+                    if (message == "Hint not available") {
+                        scope.launch {
+                            snackbarHostState.showSnackbar(message)
+                        }
+                    } else {
+                        hintMessage.value = message
                     }
-                } else {
-                    hintMessage.value = message
-                }
-            },
-            enabled = !viewModel.isGameOver && viewModel.hintState < 3,
-            modifier = Modifier.padding(16.dp)
-                .size(100.dp)
-        ) {
-            Text("Hint")
+                },
+                enabled = !viewModel.isGameOver && viewModel.hintState < 3,
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text("Hint")
+            }
+
+            SnackbarHost(hostState = snackbarHostState)
         }
 
-        SnackbarHost(hostState = snackbarHostState)
     }
 }
 
 @Composable
 fun MainGamePlayScreen(viewModel: HangmanViewModel) {
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-        Text(
-            text = viewModel.word.map { if (it in viewModel.guessedLetters) it else '_' }.joinToString(" "),
-            fontSize = 50.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        HangmanFigure(viewModel.incorrectGuesses)
 
         if (viewModel.isGameOver) {
             Text(
@@ -235,14 +232,27 @@ fun MainGamePlayScreen(viewModel: HangmanViewModel) {
                 fontSize = 30.sp
             )
         }
+
+        Text(
+            text = viewModel.word.map { if (it in viewModel.guessedLetters) it else '_' }.joinToString(" "),
+            fontSize = 36.sp,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        HangmanFigure(viewModel.incorrectGuesses)
+
     }
 }
 
 @Composable
 fun HangmanFigure(incorrectGuesses: Int) {
     val orientation = LocalConfiguration.current.orientation
-    var hangmansize by remember { mutableStateOf(0) }
-    if (orientation == Configuration.ORIENTATION_LANDSCAPE) { hangmansize = 550 } else { hangmansize = 300 }
+    var hangmansize by remember { mutableIntStateOf(0) }
+    hangmansize = if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        400
+    } else {
+        300
+    }
 
     Canvas(modifier = Modifier.size(hangmansize.dp)) {
         // Base
